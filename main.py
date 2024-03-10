@@ -1,45 +1,46 @@
-import sqlite3
-import requests
-from bs4 import BeautifulSoup
+# Импорт необходимых модулей
+import sqlite3  # Модуль для работы с базой данных SQLite
+import requests  # Модуль для выполнения HTTP-запросов
+from bs4 import BeautifulSoup  # Модуль для парсинга HTML-кода
 
-# Создаем подключение к базе данных
-conn = sqlite3.connect('internet_database.db')
-cursor = conn.cursor()
+# Создание подключения к базе данных SQLite и создание курсора
+conn = sqlite3.connect('internet_database.db')  # Подключение к базе данных или создание новой, если её нет
+cursor = conn.cursor()  # Создание курсора для выполнения SQL-запросов
 
-# Создаем таблицу, если она не существует
+# Создание таблицы 'pages', если она не существует
 cursor.execute('''CREATE TABLE IF NOT EXISTS pages
                 (url TEXT PRIMARY KEY, content TEXT)''')
 
 # Функция для добавления сайта в базу данных
 def add_site_to_database(url):
     try:
-        # Получаем содержимое страницы
-        response = requests.get(url)
-        soup = BeautifulSoup(response.text, 'html.parser')
-        content = '\n'.join([p.text for p in soup.find_all('p')])
+        # Получение содержимого страницы
+        response = requests.get(url)  # Запрос к странице по заданному URL
+        soup = BeautifulSoup(response.text, 'html.parser')  # Парсинг HTML-кода страницы
+        content = '\n'.join([p.text for p in soup.find_all('p')])  # Получение текста абзацев
 
-        # Вставляем данные в таблицу
+        # Вставка данных в таблицу
         cursor.execute("INSERT OR REPLACE INTO pages (url, content) VALUES (?, ?)", (url, content))
-        conn.commit()  # Применяем изменения к базе данных
+        conn.commit()  # Применение изменений к базе данных
         print(f"Сайт {url} успешно добавлен в базу данных.")
     except Exception as e:
         print(f"Ошибка при добавлении сайта {url} в базу данных:", e)
 
 # Функция для очистки базы данных
 def clear_database():
-    cursor.execute("DELETE FROM pages")
-    conn.commit()  # Применяем изменения к базе данных
+    cursor.execute("DELETE FROM pages")  # Удаление всех записей из таблицы 'pages'
+    conn.commit()  # Применение изменений к базе данных
     print("База данных успешно очищена.")
 
 # Функция для поиска информации на страницах
 def search_database(query):
-    cursor.execute("SELECT url, content FROM pages")
-    results = cursor.fetchall()
+    cursor.execute("SELECT url, content FROM pages")  # Выборка всех записей из таблицы 'pages'
+    results = cursor.fetchall()  # Получение всех результатов
     for url, content in results:
-        if query.lower() in content.lower():
-            print(f"Сайт: {url}")
+        if query.lower() in content.lower():  # Поиск по содержимому страниц
+            print(f"Сайт: {url}")  # Вывод URL найденной страницы
             print("Текст сайта:")
-            print(content)
+            print(content)  # Вывод текста страницы
             return
     print("Информация не найдена в базе данных :(")
 
@@ -67,5 +68,5 @@ while True:
     else:
         print("Неверный выбор. Пожалуйста, выберите действие из списка.")
 
-# Закрываем подключение к базе данных
+# Закрытие соединения с базой данных
 conn.close()
